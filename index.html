@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deseos de Tanabata · Biblioteca de Medianoche</title>
+<meta name="description" content="Escribí un deseo y cuelga en el bambú de la Biblioteca de Medianoche, en VRChat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+SC&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F3EAD5; --ink:#3D2B1F; --crimson:#8B1A1A; --gold:#C9A74E; --muted:#7A6552; --line:rgba(61,43,31,.18);
+          --t0:#3B6FB6; --t1:#C33A3A; --t2:#E5B93A; --t3:#FBF8F0; --t4:#5B4A7A; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:Alegreya, Georgia, serif; font-size:18px; line-height:1.55; }
+  main { max-width:520px; margin:0 auto; padding:40px 20px 80px; }
+  h1 { font-size:2.2rem; color:var(--crimson); text-transform:uppercase; letter-spacing:.06em; margin:0 0 4px; line-height:1.1; }
+  .sub { font-family:"Alegreya SC", serif; letter-spacing:.14em; color:var(--gold); font-size:.85rem; margin:0 0 26px; }
+  p.intro { font-style:italic; color:var(--muted); margin:0 0 24px; }
+  label { display:block; font-family:"Alegreya SC", serif; letter-spacing:.1em; font-size:.85rem; color:var(--gold); margin:18px 0 6px; }
+  textarea, input[type=text] { width:100%; border:1px solid var(--line); border-radius:2px; background:#fff8; color:var(--ink); font:inherit; padding:12px 14px; outline:none; }
+  textarea { min-height:110px; resize:vertical; }
+  textarea:focus, input:focus { border-color:var(--gold); }
+  .count { text-align:right; font-size:.8rem; color:var(--muted); margin-top:4px; }
+  .colors { display:flex; gap:12px; }
+  .colors input { position:absolute; opacity:0; width:0; height:0; }
+  .colors span { display:block; width:34px; height:60px; border-radius:2px; border:2px solid transparent; box-shadow:2px 3px 0 rgba(61,43,31,.18); cursor:pointer; }
+  .colors input:checked + span { border-color:var(--ink); transform:translateY(-4px); }
+  .colors input:focus-visible + span { outline:2px solid var(--gold); outline-offset:2px; }
+  button { width:100%; margin-top:26px; padding:14px; background:var(--crimson); color:var(--paper); border:2px solid var(--gold); border-radius:0; font:inherit; font-size:1.05rem; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; box-shadow:3px 3px 0 rgba(61,43,31,.35); }
+  button:disabled { opacity:.5; cursor:default; }
+  .status { min-height:1.6em; margin-top:14px; text-align:center; font-style:italic; color:var(--muted); }
+  .status.ok { color:#2D4A2D; } .status.err { color:var(--crimson); font-style:normal; }
+  .hint { font-size:.85rem; color:var(--muted); margin-top:6px; }
+  footer { margin-top:48px; font-size:.85rem; color:var(--muted); border-top:1px solid var(--line); padding-top:14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Deseos de Tanabata</h1>
+  <p class="sub">Biblioteca de Medianoche · VRChat</p>
+  <p class="intro">Escribí un deseo. En unos minutos cuelga del bambú de la biblioteca, y cualquiera que pase puede tocar el papel y leerlo.</p>
+
+  <form id="f" novalidate>
+    <label for="texto">Tu deseo</label>
+    <textarea id="texto" maxlength="100" placeholder="que…" required></textarea>
+    <div class="count"><span id="n">0</span>/100</div>
+
+    <label for="nombre">Tu nombre (opcional)</label>
+    <input id="nombre" type="text" maxlength="24" placeholder="si lo dejás vacío, firma Anónimo" autocomplete="off">
+
+    <label>Color del papel</label>
+    <div class="colors" role="radiogroup" aria-label="Color del papel">
+      <label><input type="radio" name="color" value="0"><span style="background:var(--t0)" title="Azul"></span></label>
+      <label><input type="radio" name="color" value="1"><span style="background:var(--t1)" title="Rojo"></span></label>
+      <label><input type="radio" name="color" value="2" checked><span style="background:var(--t2)" title="Amarillo"></span></label>
+      <label><input type="radio" name="color" value="3"><span style="background:var(--t3); border-color:var(--line)" title="Blanco"></span></label>
+      <label><input type="radio" name="color" value="4"><span style="background:var(--t4)" title="Violeta"></span></label>
+    </div>
+
+    <label for="codigo">Palabra del cartel</label>
+    <input id="codigo" type="text" maxlength="24" placeholder="está escrita en el papel que te dio el Staff" autocomplete="off" autocapitalize="characters">
+    <p class="hint">Sirve para que solo escriba quien estuvo en la biblioteca.</p>
+
+    <button id="btn" type="submit">Colgar el deseo</button>
+    <p id="status" class="status" aria-live="polite"></p>
+  </form>
+
+  <footer>Los deseos se muestran con el nombre que elijas, o "Anónimo". Uno por día. El equipo puede descolgar cualquiera.</footer>
+</main>
+<script>
+  // URL del Apps Script publicado como "aplicación web" (Anyone). Reemplazar tras el deploy.
+  const API = "https://script.google.com/macros/s/AKfycbwe6oO28sjpe0B_xtOXODhaVbkakITmF-IjNAgQ8vbSySEVX8PmLSfpT4lD9VQ9aWtjsA/exec";
+  const f = document.getElementById("f"), texto = document.getElementById("texto"), nombre = document.getElementById("nombre");
+  const codigo = document.getElementById("codigo"), btn = document.getElementById("btn"), status = document.getElementById("status"), n = document.getElementById("n");
+  texto.addEventListener("input", () => { n.textContent = texto.value.length; });
+  try { const c = localStorage.getItem("tanabata_codigo"); if (c) codigo.value = c; } catch (e) {}
+  function token() {
+    try {
+      let t = localStorage.getItem("tanabata_token");
+      if (!t) { t = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)); localStorage.setItem("tanabata_token", t); }
+      return t;
+    } catch (e) { return "anon"; }
+  }
+  function say(msg, cls) { status.textContent = msg; status.className = "status " + (cls || ""); }
+  f.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const t = texto.value.trim();
+    if (t.length < 3) { say("Un deseo un poco más largo, por favor.", "err"); return; }
+    btn.disabled = true; say("Colgando…");
+    const color = parseInt((f.querySelector("input[name=color]:checked") || {}).value || "2", 10);
+    try {
+      // text/plain evita el preflight de CORS que Apps Script no responde.
+      const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ texto: t, nombre: nombre.value.trim(), color, codigo: codigo.value.trim(), token: token() }) });
+      const o = await r.json();
+      if (o.ok) {
+        try { localStorage.setItem("tanabata_codigo", codigo.value.trim()); } catch (e) {}
+        texto.value = ""; n.textContent = "0";
+        say("Listo. En unos minutos cuelga del bambú: buscá el papel que brilla.", "ok");
+      } else if (o.error === "codigo") say("Esa palabra no es la del cartel.", "err");
+      else if (o.error === "cooldown") say("Ya dejaste un deseo hoy. Mañana otro.", "err");
+      else if (o.error === "spam") say("Eso no parece un deseo.", "err");
+      else if (o.error === "too_short") say("Un deseo un poco más largo, por favor.", "err");
+      else say("Algo falló. Probá de nuevo.", "err");
+    } catch (e) { say("No pude llegar al servidor. Probá de nuevo.", "err"); }
+    btn.disabled = false;
+  });
+</script>
+</body>
+</html>
