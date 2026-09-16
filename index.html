@@ -2,109 +2,424 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#14100D">
 <title>Deseos de Tanabata · Biblioteca de Medianoche</title>
-<meta name="description" content="Escribí un deseo y cuelga en el bambú de la Biblioteca de Medianoche, en VRChat.">
+<meta name="description" content="Escribí un deseo y colgará del bambú de la Biblioteca de Medianoche, en VRChat.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+SC&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+SC:wght@400;700&display=swap">
 <style>
-  :root { --paper:#F3EAD5; --ink:#3D2B1F; --crimson:#8B1A1A; --gold:#C9A74E; --muted:#7A6552; --line:rgba(61,43,31,.18);
-          --t0:#3B6FB6; --t1:#C33A3A; --t2:#E5B93A; --t3:#FBF8F0; --t4:#5B4A7A; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--paper); color:var(--ink); font-family:Alegreya, Georgia, serif; font-size:18px; line-height:1.55; }
-  main { max-width:520px; margin:0 auto; padding:40px 20px 80px; }
-  h1 { font-size:2.2rem; color:var(--crimson); text-transform:uppercase; letter-spacing:.06em; margin:0 0 4px; line-height:1.1; }
-  .sub { font-family:"Alegreya SC", serif; letter-spacing:.14em; color:var(--gold); font-size:.85rem; margin:0 0 26px; }
-  p.intro { font-style:italic; color:var(--muted); margin:0 0 24px; }
-  label { display:block; font-family:"Alegreya SC", serif; letter-spacing:.1em; font-size:.85rem; color:var(--gold); margin:18px 0 6px; }
-  textarea, input[type=text] { width:100%; border:1px solid var(--line); border-radius:2px; background:#fff8; color:var(--ink); font:inherit; padding:12px 14px; outline:none; }
-  textarea { min-height:110px; resize:vertical; }
-  textarea:focus, input:focus { border-color:var(--gold); }
-  .count { text-align:right; font-size:.8rem; color:var(--muted); margin-top:4px; }
-  .colors { display:flex; gap:12px; }
-  .colors input { position:absolute; opacity:0; width:0; height:0; }
-  .colors span { display:block; width:34px; height:60px; border-radius:2px; border:2px solid transparent; box-shadow:2px 3px 0 rgba(61,43,31,.18); cursor:pointer; }
-  .colors input:checked + span { border-color:var(--ink); transform:translateY(-4px); }
-  .colors input:focus-visible + span { outline:2px solid var(--gold); outline-offset:2px; }
-  button { width:100%; margin-top:26px; padding:14px; background:var(--crimson); color:var(--paper); border:2px solid var(--gold); border-radius:0; font:inherit; font-size:1.05rem; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; box-shadow:3px 3px 0 rgba(61,43,31,.35); }
-  button:disabled { opacity:.5; cursor:default; }
-  .status { min-height:1.6em; margin-top:14px; text-align:center; font-style:italic; color:var(--muted); }
-  .status.ok { color:#2D4A2D; } .status.err { color:var(--crimson); font-style:normal; }
-  .hint { font-size:.85rem; color:var(--muted); margin-top:6px; }
-  footer { margin-top:48px; font-size:.85rem; color:var(--muted); border-top:1px solid var(--line); padding-top:14px; }
+  :root {
+    --noche: #14100D;
+    --pergamino: #F3EAD5;
+    --tinta: #3D2B1F;
+    --carmesi: #8B1A1A;
+    --oro: #C9A74E;
+    --papel: #EFDCA2;            /* lo cambia el selector de color */
+    --gutter: 24px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--noche);
+    color: var(--pergamino);
+    font-family: Alegreya, Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.55;
+    overflow-x: hidden;
+  }
+
+  /* ---------- el cielo y los deseos que ya cuelgan ---------- */
+  #cielo, #fondo {
+    position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+  }
+  .estrella { position: absolute; width: 2px; height: 2px; background: var(--pergamino); opacity: .30; }
+  .deseo-fondo {
+    position: absolute; white-space: nowrap; font-style: italic; font-size: 13px;
+    letter-spacing: .02em; opacity: 0; transition: opacity 1.6s ease;
+    animation: flotar 20s ease-in-out infinite alternate;
+  }
+  @keyframes flotar { from { transform: translateY(14px); } to { transform: translateY(-14px); } }
+  @media (prefers-reduced-motion: reduce) { .deseo-fondo { animation: none; } }
+
+  /* ---------- estructura ---------- */
+  .hoja {
+    position: relative; z-index: 1;
+    max-width: 430px; margin: 0 auto;
+    padding: calc(26px + env(safe-area-inset-top, 0px)) var(--gutter) calc(28px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    min-height: 100vh;
+  }
+  .formulario { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+  .encabezado { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+  h1 {
+    margin: 0; font-family: "Alegreya SC", Alegreya, serif; font-weight: 700;
+    font-size: clamp(1.5rem, 7vw, 1.75rem); letter-spacing: .07em; color: var(--oro); line-height: 1;
+  }
+  .bajada { margin: 0; font-size: .82rem; font-style: italic; color: rgba(243,234,213,.5); letter-spacing: .02em; }
+  .eyebrow { font-family: "Alegreya SC", Alegreya, serif; font-size: .7rem; letter-spacing: .22em; color: rgba(201,167,78,.8); }
+
+  /* ---------- el tanzaku ---------- */
+  .colgante { display: flex; flex-direction: column; align-items: center; }
+  .hilo { width: 1px; height: 22px; background: var(--oro); opacity: .55; }
+  .nudo { width: 7px; height: 7px; border: 1px solid var(--oro); background: var(--noche); transform: rotate(45deg); margin-bottom: -4px; }
+  .papel {
+    position: relative;
+    /* La altura manda: en un celular bajo el papel se achica y el resto del formulario
+       sigue entrando. El ancho sale de la proporción de tira. */
+    height: min(47vh, 468px); aspect-ratio: 254 / 468; width: auto; max-width: 66vw;
+    background: var(--papel); border: 1px solid var(--oro);
+    box-shadow: 5px 7px 0 rgba(0,0,0,.45);
+    padding: 20px 18px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: background .45s ease;
+  }
+  .perforacion { position: absolute; top: 9px; left: 50%; margin-left: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--noche); opacity: .55; }
+  .filete { height: 1px; background: rgba(61,43,31,.25); flex: none; }
+  #texto {
+    flex: 1 1 auto; width: 100%; min-height: 0;
+    border: 0; background: transparent; resize: none; padding: 0;
+    color: var(--tinta); font-family: inherit; font-size: 1.12rem; line-height: 1.55;
+  }
+  #texto:focus, #nombre:focus, #codigo:focus { outline: none; }
+  #texto::placeholder, #nombre::placeholder, #codigo::placeholder { color: rgba(61,43,31,.38); font-style: italic; }
+  .contador { flex: none; text-align: right; font-size: .68rem; letter-spacing: .06em; color: rgba(61,43,31,.45); font-variant-numeric: tabular-nums; }
+  .contador.tope { color: var(--carmesi); }
+  .firma { flex: none; display: flex; align-items: baseline; gap: 8px; }
+  .firma span { font-family: "Alegreya SC", Alegreya, serif; font-size: .66rem; letter-spacing: .1em; color: rgba(61,43,31,.5); }
+  #nombre {
+    flex: 1 1 auto; min-width: 0; border: 0; background: transparent; padding: 0;
+    color: var(--tinta); font-family: inherit; font-size: .95rem; font-style: italic; text-align: right;
+  }
+
+  /* ---------- colores ---------- */
+  .colores { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .tiras { display: flex; gap: 11px; }
+  .tira {
+    width: 30px; height: 48px; padding: 0; cursor: pointer;
+    border: 1px solid rgba(20,16,13,.55); box-shadow: 2px 3px 0 rgba(0,0,0,.35);
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .tira[aria-checked="true"] { border-color: var(--oro); transform: translateY(-4px); }
+  .tira:focus-visible { outline: 2px solid var(--oro); outline-offset: 3px; }
+
+  /* ---------- palabra y envío ---------- */
+  .campo { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+  .campo label { font-family: "Alegreya SC", Alegreya, serif; font-size: .68rem; letter-spacing: .12em; color: rgba(201,167,78,.75); }
+  #codigo {
+    width: 100%; padding: 12px; border: 1px solid rgba(201,167,78,.4);
+    background: rgba(243,234,213,.07); color: var(--pergamino);
+    font-family: inherit; font-size: .95rem; letter-spacing: .1em; text-transform: uppercase;
+  }
+  #codigo:focus { border-color: var(--oro); }
+  /* el valor va en versalitas, el placeholder no: en mayúsculas no entraba */
+  #codigo::placeholder { text-transform: none; letter-spacing: .02em; font-size: .92rem; }
+  #enviar {
+    width: 100%; padding: 15px; cursor: pointer;
+    background: var(--carmesi); color: var(--pergamino);
+    border: 2px solid var(--oro); box-shadow: 4px 4px 0 rgba(0,0,0,.5);
+    font-family: "Alegreya SC", Alegreya, serif; font-size: 1rem; letter-spacing: .12em;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  #enviar:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
+  #enviar:disabled { opacity: .45; cursor: default; transform: none; }
+  #enviar:focus-visible { outline: 2px solid var(--pergamino); outline-offset: 3px; }
+  .estado { margin: 0; min-height: 1.5em; text-align: center; font-size: .85rem; font-style: italic; color: rgba(243,234,213,.55); }
+  .estado.error { color: #E08A7A; font-style: normal; }
+  .pie { margin: 0; text-align: center; font-size: .78rem; font-style: italic; color: rgba(243,234,213,.38); }
+
+  /* ---------- pantalla de confirmación ---------- */
+  #colgado { display: none; flex-direction: column; align-items: center; gap: 0; width: 100%; }
+  #colgado.visible { display: flex; }
+  .rama { position: relative; width: min(342px, 86vw); height: 300px; }
+  .rama-palo { position: absolute; top: 34px; left: 0; width: 100%; height: 5px; background: #4E5C38; box-shadow: 0 2px 0 rgba(0,0,0,.4); }
+  .rama-brote { position: absolute; top: 24px; right: 30%; width: 3px; height: 22px; background: #4E5C38; }
+  .hoja-bambu { position: absolute; background: #5C6D41; }
+  .hoja-bambu.a { top: 12px; right: 12%; width: 52px; height: 9px; transform: rotate(-24deg); border-radius: 0 60% 0 60%; }
+  .hoja-bambu.b { top: 20px; left: 10%; width: 46px; height: 8px; transform: rotate(18deg); border-radius: 60% 0 60% 0; }
+  .colgado-papel {
+    position: absolute; top: 39px; left: 50%; margin-left: -43px;
+    display: flex; flex-direction: column; align-items: center;
+    transform-origin: 50% 0; animation: mecer 5.5s ease-in-out infinite alternate;
+  }
+  @keyframes mecer { from { transform: rotate(-2.2deg); } to { transform: rotate(2.2deg); } }
+  .colgado-hilo { width: 1px; height: 30px; background: var(--oro); opacity: .6; }
+  .colgado-tira {
+    width: 86px; height: 210px; padding: 12px 8px;
+    background: var(--papel); border: 1px solid var(--oro);
+    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+    animation: latir 2.6s ease-in-out infinite alternate;
+  }
+  @keyframes latir {
+    from { box-shadow: 4px 6px 0 rgba(0,0,0,.45), 0 0 14px rgba(201,167,78,.3); }
+    to   { box-shadow: 4px 6px 0 rgba(0,0,0,.45), 0 0 26px rgba(201,167,78,.62); }
+  }
+  @media (prefers-reduced-motion: reduce) { .colgado-papel, .colgado-tira { animation: none; } }
+  .colgado-texto { writing-mode: vertical-rl; color: var(--tinta); font-size: .8rem; line-height: 1.4; max-height: 150px; overflow: hidden; }
+  .colgado-firma { font-family: "Alegreya SC", Alegreya, serif; font-size: .66rem; letter-spacing: .08em; color: rgba(61,43,31,.65); }
+  .colgado-aviso { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; margin-top: 16px; }
+  .colgado-aviso h2 { margin: 0; font-family: "Alegreya SC", Alegreya, serif; font-size: 1.5rem; font-weight: 700; letter-spacing: .06em; color: var(--oro); line-height: 1.15; }
+  .rulo { width: 74px; height: 1px; background: rgba(201,167,78,.5); }
+  .colgado-aviso p { margin: 0; max-width: 300px; color: rgba(243,234,213,.72); }
+  .colgado-aviso .menor { font-size: .82rem; font-style: italic; color: rgba(243,234,213,.4); }
+
+  /* ---------- pantalla ancha ---------- */
+  @media (min-width: 900px) {
+    .hoja { max-width: 1180px; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 72px; padding-block: 56px; }
+    .invitacion { display: flex; flex-direction: column; gap: 22px; }
+    .encabezado { align-items: flex-start; text-align: left; }
+    h1 { font-size: 3.2rem; letter-spacing: .04em; }
+    .bajada { font-size: 1.05rem; max-width: 30ch; }
+    .pasos { display: flex; flex-direction: column; gap: 12px; }
+    .paso { display: flex; gap: 14px; align-items: baseline; }
+    .paso b { font-family: "Alegreya SC", Alegreya, serif; font-size: .9rem; font-weight: 400; color: var(--carmesi); letter-spacing: .1em; min-width: 26px; }
+    .paso span { color: rgba(243,234,213,.62); }
+    .formulario { gap: 20px; }
+    .papel { width: 290px; }
+    .campo, #enviar { max-width: 290px; }
+    .papel #texto { font-size: 1.2rem; }
+  }
+  @media (max-width: 899px) { .invitacion .pasos, .invitacion .eyebrow { display: none; } }
+  .oculto { display: none !important; }
 </style>
 </head>
 <body>
-<main>
-  <h1>Deseos de Tanabata</h1>
-  <p class="sub">Biblioteca de Medianoche · VRChat</p>
-  <p class="intro">Escribí un deseo. En unos minutos cuelga del bambú de la biblioteca, y cualquiera que pase puede tocar el papel y leerlo.</p>
+<div id="cielo" aria-hidden="true"></div>
+<div id="fondo" aria-hidden="true"></div>
 
-  <form id="f" novalidate>
-    <label for="texto">Tu deseo</label>
-    <textarea id="texto" maxlength="100" placeholder="que…" required></textarea>
-    <div class="count"><span id="n">0</span>/100</div>
+<main class="hoja">
+  <div class="invitacion">
+    <div class="encabezado">
+      <span class="eyebrow">Biblioteca de Medianoche</span>
+      <h1>Deseos de Tanabata</h1>
+      <p class="bajada">Escribí uno y colgará del bambú de la biblioteca.</p>
+    </div>
+    <div class="pasos">
+      <div class="paso"><b>I</b><span>Elegí el color del papel y escribí sobre él.</span></div>
+      <div class="paso"><b>II</b><span>Copiá la palabra del cartel que te dio el staff.</span></div>
+      <div class="paso"><b>III</b><span>Volvé al mundo y buscá el papel que brilla.</span></div>
+    </div>
+  </div>
 
-    <label for="nombre">Tu nombre (opcional)</label>
-    <input id="nombre" type="text" maxlength="24" placeholder="si lo dejás vacío, firma Anónimo" autocomplete="off">
-
-    <label>Color del papel</label>
-    <div class="colors" role="radiogroup" aria-label="Color del papel">
-      <label><input type="radio" name="color" value="0"><span style="background:var(--t0)" title="Azul"></span></label>
-      <label><input type="radio" name="color" value="1"><span style="background:var(--t1)" title="Rojo"></span></label>
-      <label><input type="radio" name="color" value="2" checked><span style="background:var(--t2)" title="Amarillo"></span></label>
-      <label><input type="radio" name="color" value="3"><span style="background:var(--t3); border-color:var(--line)" title="Blanco"></span></label>
-      <label><input type="radio" name="color" value="4"><span style="background:var(--t4)" title="Violeta"></span></label>
+  <form id="formulario" class="formulario" novalidate>
+    <div class="colgante">
+      <div class="hilo"></div>
+      <div class="nudo"></div>
+      <div class="papel">
+        <div class="perforacion"></div>
+        <div class="filete" style="margin-top:8px"></div>
+        <textarea id="texto" maxlength="100" placeholder="que…" aria-label="Tu deseo, hasta 100 caracteres" required></textarea>
+        <div class="contador"><span id="cuenta">0</span>/100</div>
+        <div class="filete"></div>
+        <div class="firma">
+          <span>firma</span>
+          <input id="nombre" type="text" maxlength="16" placeholder="Anónimo" autocomplete="off" aria-label="Tu nombre, opcional, hasta 16 letras">
+        </div>
+      </div>
     </div>
 
-    <label for="codigo">Palabra del cartel</label>
-    <input id="codigo" type="text" maxlength="24" placeholder="está escrita en el papel que te dio el Staff" autocomplete="off" autocapitalize="characters">
-    <p class="hint">Sirve para que solo escriba quien estuvo en la biblioteca.</p>
+    <div class="colores">
+      <span class="eyebrow" style="letter-spacing:.12em">el papel</span>
+      <div class="tiras" role="radiogroup" aria-label="Color del papel" id="tiras"></div>
+    </div>
 
-    <button id="btn" type="submit">Colgar el deseo</button>
-    <p id="status" class="status" aria-live="polite"></p>
+    <div class="campo">
+      <label for="codigo">palabra del cartel</label>
+      <input id="codigo" type="text" maxlength="24" placeholder="la del papel del staff" aria-label="Palabra del cartel" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
+
+    <button id="enviar" type="submit">Colgar el deseo</button>
+    <p id="estado" class="estado" aria-live="polite"></p>
+    <p class="pie">Uno por día. Tarda unos minutos en aparecer.</p>
   </form>
 
-  <footer>Los deseos se muestran con el nombre que elijas, o "Anónimo". Uno por día. El equipo puede descolgar cualquiera.</footer>
+  <section id="colgado" aria-live="polite">
+    <div class="rama">
+      <div class="rama-palo"></div>
+      <div class="rama-brote"></div>
+      <div class="hoja-bambu a"></div>
+      <div class="hoja-bambu b"></div>
+      <div class="colgado-papel">
+        <div class="colgado-hilo"></div>
+        <div class="colgado-tira">
+          <div class="colgado-texto" id="colgado-texto"></div>
+          <div class="colgado-firma" id="colgado-firma"></div>
+        </div>
+      </div>
+    </div>
+    <div class="colgado-aviso">
+      <h2>Ya cuelga del bambú</h2>
+      <div class="rulo"></div>
+      <p>Entrá al mundo y buscá el papel que brilla: es el tuyo. Tarda entre tres y ocho minutos en aparecer.</p>
+      <p class="menor">Podés dejar otro deseo mañana.</p>
+    </div>
+  </section>
 </main>
+
 <script>
-  // URL del Apps Script publicado como "aplicación web" (Anyone). Reemplazar tras el deploy.
-  const API = "https://script.google.com/macros/s/AKfycbwe6oO28sjpe0B_xtOXODhaVbkakITmF-IjNAgQ8vbSySEVX8PmLSfpT4lD9VQ9aWtjsA/exec";
-  const f = document.getElementById("f"), texto = document.getElementById("texto"), nombre = document.getElementById("nombre");
-  const codigo = document.getElementById("codigo"), btn = document.getElementById("btn"), status = document.getElementById("status"), n = document.getElementById("n");
-  texto.addEventListener("input", () => { n.textContent = texto.value.length; });
-  try { const c = localStorage.getItem("tanabata_codigo"); if (c) codigo.value = c; } catch (e) {}
+  // Apps Script publicado como aplicación web (acceso: cualquier persona).
+  const API  = "https://script.google.com/macros/s/AKfycbwe6oO28sjpe0B_xtOXODhaVbkakITmF-IjNAgQ8vbSySEVX8PmLSfpT4lD9VQ9aWtjsA/exec";
+  // El mismo feed que lee el árbol dentro del mundo. Sirve con CORS abierto y cachea 5 minutos.
+  const FEED = "https://gist.githubusercontent.com/Madrigueras/b9e5bae5b35e06ed9d036687387798cd/raw/deseos.txt";
+
+  // 0 azul · 1 rojo · 2 amarillo · 3 blanco · 4 violeta (los cinco elementos).
+  // "puro" es el color que se ve en el botón; "papel" es ese color mezclado con pergamino,
+  // porque sobre azul o violeta puros la tinta no se lee. Es el mismo criterio que usa el mundo.
+  const COLORES = [
+    { id: 0, nombre: "Azul",     puro: "#3B6FB6", papel: "#B4C3D8" },
+    { id: 1, nombre: "Rojo",     puro: "#C33A3A", papel: "#E3AFA4" },
+    { id: 2, nombre: "Amarillo", puro: "#E5B93A", papel: "#EFDCA2" },
+    { id: 3, nombre: "Blanco",   puro: "#FBF8F0", papel: "#F7F2E6" },
+    { id: 4, nombre: "Violeta",  puro: "#5B4A7A", papel: "#BDB0CC" }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const form = $("formulario"), texto = $("texto"), nombre = $("nombre"), codigo = $("codigo");
+  const enviar = $("enviar"), estado = $("estado"), cuenta = $("cuenta"), tiras = $("tiras");
+  let color = 2;
+
+  /* ---------------- almacenamiento local, siempre tolerante ---------------- */
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const leer = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+
   function token() {
-    try {
-      let t = localStorage.getItem("tanabata_token");
-      if (!t) { t = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)); localStorage.setItem("tanabata_token", t); }
-      return t;
-    } catch (e) { return "anon"; }
+    let t = leer("tanabata_token");
+    if (!t) {
+      t = (crypto.randomUUID && crypto.randomUUID()) ||
+          (Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+      guardar("tanabata_token", t);
+    }
+    return t;
   }
-  function say(msg, cls) { status.textContent = msg; status.className = "status " + (cls || ""); }
-  f.addEventListener("submit", async (ev) => {
+
+  /* ---------------- el cielo ---------------- */
+  (function estrellas() {
+    const cielo = $("cielo");
+    const n = Math.min(46, Math.round(window.innerWidth * window.innerHeight / 14000));
+    let html = "";
+    for (let i = 0; i < n; i++) {
+      html += '<div class="estrella" style="top:' + (Math.random() * 100).toFixed(2) + '%;left:' +
+              (Math.random() * 100).toFixed(2) + '%;opacity:' + (0.14 + Math.random() * 0.24).toFixed(2) + '"></div>';
+    }
+    cielo.innerHTML = html;
+  })();
+
+  /* ---------------- los deseos que ya cuelgan, de fondo ---------------- */
+  function recortar(s, n) { return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s; }
+
+  function pintarFondo(lista) {
+    if (!lista.length) return;
+    const capa = $("fondo");
+    const cuantos = Math.min(12, Math.max(lista.length, lista.length >= 3 ? 8 : lista.length));
+    const franja = 100 / cuantos;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < cuantos; i++) {
+      const d = lista[i % lista.length];
+      const el = document.createElement("div");
+      el.className = "deseo-fondo";
+      el.textContent = d.nombre ? recortar(d.texto, 44) + " — " + d.nombre : recortar(d.texto, 48);
+      el.style.color = d.color;
+      el.style.top = (i * franja + Math.random() * franja * 0.6).toFixed(2) + "%";
+      el.style.left = (Math.random() * 62 - 6).toFixed(2) + "%";
+      el.style.transform = "rotate(" + (Math.random() * 2.4 - 1.2).toFixed(2) + "deg)";
+      el.style.animationDuration = (16 + Math.random() * 16).toFixed(1) + "s";
+      el.style.animationDelay = "-" + (Math.random() * 12).toFixed(1) + "s";
+      frag.appendChild(el);
+      // tenues a propósito: el papel va encima y lo que asoma al costado no debe competir con él
+      requestAnimationFrame(() => { el.style.opacity = (0.08 + Math.random() * 0.06).toFixed(2); });
+    }
+    capa.appendChild(frag);
+  }
+
+  fetch(FEED, { cache: "no-store" })
+    .then((r) => (r.ok ? r.text() : Promise.reject(r.status)))
+    .then((txt) => {
+      const lista = [];
+      txt.split("\n").forEach((linea) => {
+        const f = linea.trim().split("|");
+        if (f.length < 3) return;                       // "# sin deseos todavia" y basura quedan afuera
+        const id = parseInt(f[0], 10);
+        if (!id || id <= 0) return;
+        const c = COLORES[Math.min(4, Math.max(0, parseInt(f[1], 10) || 0))];
+        lista.push({ color: c.puro, texto: f[2], nombre: (f[3] || "").trim() });
+      });
+      pintarFondo(lista);
+    })
+    .catch(() => {});                                   // sin fondo, el formulario funciona igual
+
+  /* ---------------- los cinco colores ---------------- */
+  COLORES.forEach((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tira";
+    b.style.background = c.puro;
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-label", c.nombre);
+    b.setAttribute("aria-checked", c.id === color ? "true" : "false");
+    b.addEventListener("click", () => {
+      color = c.id;
+      document.documentElement.style.setProperty("--papel", c.papel);
+      tiras.querySelectorAll(".tira").forEach((o, i) => o.setAttribute("aria-checked", i === c.id ? "true" : "false"));
+    });
+    tiras.appendChild(b);
+  });
+  document.documentElement.style.setProperty("--papel", COLORES[color].papel);
+
+  /* ---------------- contador ---------------- */
+  texto.addEventListener("input", () => {
+    cuenta.textContent = texto.value.length;
+    cuenta.parentElement.classList.toggle("tope", texto.value.length >= 90);
+  });
+
+  /* ---------------- la palabra del cartel se recuerda ---------------- */
+  const guardado = leer("tanabata_codigo");
+  if (guardado) codigo.value = guardado;
+
+  /* ---------------- envío ---------------- */
+  function decir(msg, clase) { estado.textContent = msg; estado.className = "estado" + (clase ? " " + clase : ""); }
+
+  form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const t = texto.value.trim();
-    if (t.length < 3) { say("Un deseo un poco más largo, por favor.", "err"); return; }
-    btn.disabled = true; say("Colgando…");
-    const color = parseInt((f.querySelector("input[name=color]:checked") || {}).value || "2", 10);
+    if (t.length < 3) { decir("Un deseo un poco más largo, por favor.", "error"); texto.focus(); return; }
+
+    enviar.disabled = true;
+    decir("Colgando…");
     try {
-      // text/plain evita el preflight de CORS que Apps Script no responde.
-      const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ texto: t, nombre: nombre.value.trim(), color, codigo: codigo.value.trim(), token: token() }) });
+      // text/plain evita el preflight de CORS, que Apps Script no responde.
+      const r = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          texto: t,
+          nombre: nombre.value.trim(),
+          color: color,
+          codigo: codigo.value.trim(),
+          token: token()
+        })
+      });
       const o = await r.json();
       if (o.ok) {
-        try { localStorage.setItem("tanabata_codigo", codigo.value.trim()); } catch (e) {}
-        texto.value = ""; n.textContent = "0";
-        say("Listo. En unos minutos cuelga del bambú: buscá el papel que brilla.", "ok");
-      } else if (o.error === "codigo") say("Esa palabra no es la del cartel.", "err");
-      else if (o.error === "cooldown") say("Ya dejaste un deseo hoy. Mañana otro.", "err");
-      else if (o.error === "spam") say("Eso no parece un deseo.", "err");
-      else if (o.error === "too_short") say("Un deseo un poco más largo, por favor.", "err");
-      else say("Algo falló. Probá de nuevo.", "err");
-    } catch (e) { say("No pude llegar al servidor. Probá de nuevo.", "err"); }
-    btn.disabled = false;
+        guardar("tanabata_codigo", codigo.value.trim());
+        $("colgado-texto").textContent = t;
+        $("colgado-firma").textContent = nombre.value.trim() || "Anónimo";
+        form.classList.add("oculto");
+        document.querySelector(".invitacion").classList.add("oculto");
+        $("colgado").classList.add("visible");
+        return;
+      }
+      if (o.error === "codigo")          decir("Esa palabra no es la del cartel.", "error");
+      else if (o.error === "cooldown")   decir("Ya dejaste un deseo hoy. Mañana otro.", "error");
+      else if (o.error === "spam")       decir("Eso no parece un deseo.", "error");
+      else if (o.error === "too_short")  decir("Un deseo un poco más largo, por favor.", "error");
+      else                               decir("Algo falló. Probá de nuevo.", "error");
+    } catch (e) {
+      decir("No pude llegar al servidor. Probá de nuevo.", "error");
+    }
+    enviar.disabled = false;
   });
 </script>
 </body>
